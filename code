@@ -1,0 +1,89 @@
+#include <WiFi.h>
+#include <PubSubClient.h>
+
+// Configuration
+const char* ssid = "YOUR_SSID";
+const char* password = "YOUR_PASSWORD";
+
+const char* mqtt_server = "YOUR_MQTT_BROKER_IP";
+const int mqtt_port = 1883;
+const char* topic_power = "home/energy/power";
+const char* topic_current = "home/energy/current";
+const char* topic_voltage = "home/energy/voltage";
+
+// Sensor pins
+const int pinCurrent = 34;   // analog pin reading current sensor
+// If measuring voltage: pinVoltage etc.
+
+// Calibration constants
+const float voltageRef = 230.0; // or your mains voltage
+const float currentSensorScale = 30.0; // depends on your CT / sensor rating
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+unsigned long lastSend = 0;
+const unsigned long sendInterval = 60000; // send every 60s
+
+void setup() {
+  Serial.begin(115200);
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("WiFi connected");
+
+  client.setServer(mqtt_server, mqtt_port);
+}
+
+void loop() {
+  if (!client.connected()) {
+    reconnectMQTT();
+  }
+  client.loop();
+
+  unsigned long now = millis();
+  if (now - lastSend > sendInterval) {
+    lastSend = now;
+    float current = readCurrent();
+    float voltage = voltageRef; // or read if you have voltage sensor
+    float power = voltage * current; // simplistic
+
+    // → Format JSON
+    String payload = "{";
+    payload += "\"current\":";
+    payload += current;
+    payload += ",\"voltage\":";
+    payload += voltage;
+    payload += ",\"power\":";
+    payload += power;
+    payload += "}";
+
+    client.publish(topic_power, payload.c_str());
+    Serial.println("Published: " + payload);
+  }
+
+  delay(1000);
+}
+
+float readCurrent() {
+  int raw = analogRead(pinCurrent);
+  // map raw to current; depends on sensor
+  // you may need calibration, offsets, RMS etc.
+  float current = (raw / 4095.0) * currentSensorScale;  
+  return current;
+}
+
+void reconnectMQTT() {
+  while (!client.connected()) {
+    Serial.print("MQTT connecting...");
+    if (client.connect("HomeEnergyMonitor")) {
+      Serial.println("connected");
+    } else {
+      Serial.print("failed, rc=");
+      Serial.print(client.state());
+      delay(5000);
+    }
+  }
+}
