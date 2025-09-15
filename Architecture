@@ -1,0 +1,5 @@
+[ Sensors + Device ] → (MQTT / HTTP REST) → [ Backend / Database ] ←→ [ Frontend Dashboard ]
+                              ↓
+                       Alerts/Notifications
+                              ↓
+                     (Optional Control / Automation)
