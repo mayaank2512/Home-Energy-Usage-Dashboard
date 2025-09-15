@@ -1,0 +1,7 @@
+Hardware
+Component	Purpose
+Microcontroller with WiFi / wireless (ESP32, ESP8266, or RB Pi etc.)	To read sensor data and send it to backend
+Current sensor(s) (e.g. ACS712, SCT‑013) or non‑invasive CT (current transformer)	To measure current / power consumption
+Voltage measurement or assume known voltage (for calculating power)	For accurate power/power‐usage calculation
+Relay / Smart plugs (optional)	To control appliances (turn off some if usage high)
+Power supply	For sensors + microcontroller
